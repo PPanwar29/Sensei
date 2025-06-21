@@ -4,16 +4,13 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { generateAIInsights } from "./dashboard";
+import { getOrCreateUser } from "@/lib/checkUser";
 
 export async function updateUser(data) {
 	const { userId } = await auth();
 	if (!userId) throw new Error("Unauthorized");
 
-	const user = await db.user.findUnique({
-		where: { clerkUserId: userId },
-	});
-
-	if (!user) throw new Error("User not found");
+	const user = await getOrCreateUser();
 
 	try {
 		// Start a transaction to handle both operations
@@ -80,21 +77,8 @@ export async function getUserOnboardingStatus() {
 	const { userId } = await auth();
 	if (!userId) throw new Error("Unauthorized");
 
-	const user = await db.user.findUnique({
-		where: { clerkUserId: userId },
-	});
-
-	if (!user) throw new Error("User not found");
-
 	try {
-		const user = await db.user.findUnique({
-			where: {
-				clerkUserId: userId,
-			},
-			select: {
-				industry: true,
-			},
-		});
+		const user = await getOrCreateUser();
 
 		return {
 			isOnboarded: !!user?.industry,
